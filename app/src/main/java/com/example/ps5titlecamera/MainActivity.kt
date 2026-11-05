@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
         overlay.addView(statusView)
         manualInput = EditText(this).apply {
             hint = "Enter PPSA code manually"
-            singleLine = true
+            setSingleLine(true)
             setTextColor(0xFFFFFFFF.toInt())
             setHintTextColor(0xFF9CA8B9.toInt())
             setBackgroundColor(0xFF202838.toInt())
