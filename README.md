@@ -1,13 +1,20 @@
 # PS5 Title Camera
 
-Native Android app that uses the rear camera and on-device ML Kit OCR to recognise printed PlayStation 5 title IDs in the exact format `PPSA` followed by five digits. It looks up the game name in the community PS5 title database and displays the result over the camera preview. Manual code entry is also available.
+Native Android app for recognising PlayStation 5 printed title IDs with the phone's rear camera. It uses CameraX and on-device Google ML Kit text recognition, validates IDs in the exact format `PPSA` plus five digits, and looks up the game name in the community PS5 title list. Manual code entry is included.
 
-## Build APK
+## Download the APK
 
-GitHub Actions builds a debug APK on pushes to `main`, pull requests, and manual workflow runs. Open **Actions**, select the latest **Android APK** run, and download the `ps5-title-camera-debug-apk` artifact (retained for 30 days).
+GitHub Actions builds a debug APK whenever code is pushed to `main`, and can also be run manually. Open the **Actions** tab, choose the latest **Android APK** workflow run, and download the `ps5-title-camera-debug-apk` artifact. Artifacts are retained for 30 days.
 
-To publish a persistent APK, push a version tag such as `v0.2.0`; the workflow attaches the APK to a GitHub Release.
+To create a persistent download, publish a version tag beginning with `v` (for example `v0.1.0`). The workflow attaches the APK to a GitHub Release.
 
-## Current status
+## Project status and limitations
 
-This is an initial source project. The first cloud build is needed to verify compilation; it has not yet been built or tested on a physical device. The app downloads the title list at startup and requires internet access for that lookup. Camera frames are processed locally by ML Kit and are not uploaded.
+This is an initial source build. The first GitHub Actions run must complete successfully before an APK is available; the app has not yet been tested on a physical device. First launch needs internet access to download the title list. OCR is performed on-device; camera frames are not uploaded. This is an unsigned debug APK, not a Play Store release.
+
+## Tech
+
+- Kotlin, Android SDK 35, minimum Android 6.0 (API 23)
+- CameraX rear-camera preview and image analysis
+- Google ML Kit Text Recognition
+- PS5 title database: `andshrew/PlayStation-Titles`
