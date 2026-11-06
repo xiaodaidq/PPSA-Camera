@@ -24,6 +24,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.ConcurrentHashMap
 
 class MainActivity : AppCompatActivity() {
     private lateinit var previewView: PreviewView
@@ -33,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var manualInput: EditText
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
-    private val titles = HashMap<String, String>()
+    private val titles = ConcurrentHashMap<String, String>()
     private val processing = AtomicBoolean(false)
     @Volatile private var lastCode = ""
     @Volatile private var lastAcceptedAt = 0L
@@ -168,10 +169,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun findCode(text: String): String? {
+        // Keep token boundaries so a code embedded in a longer letter/digit string is rejected.
+        // Optional whitespace handles common OCR spacing between printed characters.
+        val pattern = Regex("(?<![A-Z0-9])P\\s*P\\s*S\\s*A\\s*(?:[0-9]\\s*){5}(?![A-Z0-9])")
         for (line in text.uppercase().lines()) {
-            val compact = line.replace(Regex("[^A-Z0-9]"), "")
-            val match = Regex("(?<![A-Z0-9])PPSA[0-9]{5}(?![0-9])").find(compact)
-            if (match != null) return match.value
+            val match = pattern.find(line) ?: continue
+            return match.value.replace(Regex("[^A-Z0-9]"), "")
         }
         return null
     }
@@ -205,13 +208,18 @@ class MainActivity : AppCompatActivity() {
                         val id = sourceId.substringBefore('_')
                         val name = cols[2].trim()
                         if (Regex("^PPSA[0-9]{5}(?:_[0-9]{2})?$").matches(sourceId) && name.isNotBlank()) {
-                            synchronized(titles) { if (!titles.containsKey(id)) titles[id] = name }
+                            titles.putIfAbsent(id, name)
                         }
                     }
                 }
             }
             connection.disconnect()
-            runOnUiThread { statusView.text = "PS5 database ready · ${titles.size} title IDs" }
+            runOnUiThread {
+                statusView.text = "PS5 database ready · ${titles.size} title IDs"
+                // If the camera recognised a code before the list finished downloading, resolve it now.
+                val visibleCode = codeView.text.toString()
+                if (Regex("^PPSA[0-9]{5}$").matches(visibleCode)) lookup(visibleCode)
+            }
         } catch (_: Exception) {
             runOnUiThread { statusView.text = "Database unavailable; check internet and restart." }
         }
